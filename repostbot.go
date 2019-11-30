@@ -2,10 +2,18 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
+	"log"
+	"os"
 )
 
 func (im *IncomingMessage) AddLine(logFile string) {
-	file, _ := json.Marshal(im)
-	_ = ioutil.WriteFile(logFile, file, 0644)
+	in, err := os.Open(logFile)
+	logLine, _ := json.Marshal(im)
+	out, err := os.OpenFile(logFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+	if err != nil {
+		log.Fatal(err)
+	}
+	out.Write(logLine)
+	io.Copy(out, in)
 }
