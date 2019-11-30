@@ -50,6 +50,7 @@ func main() {
 			MessageText: update.Message.Text,
 			MessageTime: update.Message.Time(),
 		}
+
 		im.AddLine(botConf.LogFile)
 
 		log.Printf("Message text: %s", im.MessageText)
