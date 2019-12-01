@@ -13,9 +13,10 @@ type BotConfigFromFile struct {
 }
 
 type IncomingMessage struct {
-	MessageText string    `json:"message_text"`
-	UserName    string    `json:"username"`
-	MessageTime time.Time `json:"time_sent"`
+	MessageID   int
+	MessageTime time.Time
+	UserName    string
+	MessageText string
 }
 
 func loadBotConfig() BotConfigFromFile {
@@ -46,15 +47,16 @@ func main() {
 			continue
 		}
 		im := &IncomingMessage{
+			MessageID:   update.Message.MessageID,
+			MessageTime: update.Message.Time(),
 			UserName:    update.Message.From.UserName,
 			MessageText: update.Message.Text,
-			MessageTime: update.Message.Time(),
 		}
 
-		im.AddLine(botConf.LogFile)
+		im.AddLogToDB(botConf.LogFile)
 
-		log.Printf("Message text: %s", im.MessageText)
-		log.Printf("Message received from: %s", im.UserName)
+		//log.Printf("Message text: %s", im.MessageText)
+		//log.Printf("Message received from: %s", im.UserName)
 
 		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 		//msg.ReplyToMessageID = update.Message.MessageID

@@ -1,19 +1,24 @@
 package main
 
 import (
-	"encoding/json"
-	"io"
-	"log"
-	"os"
+	"database/sql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func (im *IncomingMessage) AddLine(logFile string) {
-	in, err := os.Open(logFile)
-	logLine, _ := json.Marshal(im)
-	out, err := os.OpenFile(logFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
-	if err != nil {
-		log.Fatal(err)
-	}
-	out.Write(logLine)
-	io.Copy(out, in)
+//AddLogToDB adds lines of the group chat to the db file specified in config.toml
+func (im *IncomingMessage) AddLogToDB(logFile string) {
+	database, _ := sql.Open("sqlite3", logFile)
+	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS chatLog (id INTEGER PRIMARY KEY, username TEXT, messagetext TEXT, message_time_sent TEXT)")
+	statement.Exec()
+	statement, _ = database.Prepare("INSERT INTO chatLog (username, messagetext, message_time_sent) VALUES (?, ?, ?)")
+	statement.Exec(im.UserName, im.MessageText, im.MessageTime)
+	//rows, _ := database.Query("SELECT id, username, messagetext, FROM chathistory")
+	//var id int
+	//var username string
+	//var messagetext string
+	//for rows.Next() {
+	//	rows.Scan(&id, &username, &messagetext)
+	//	fmt.Println(strconv.Itoa(id) + ": " + username + " " + messagetext + " ")
+	//
+	//}
 }
