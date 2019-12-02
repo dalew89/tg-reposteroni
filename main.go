@@ -3,37 +3,32 @@ package main
 import (
 	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mvdan/xurls"
 	"log"
-	"time"
 )
 
 type BotConfigFromFile struct {
-	BotToken string `toml:"bot_token"`
-	LogFile  string `toml:"repost_log_file"`
+	BotToken    string `toml:"bot_token"`
+	LogFilePath string `toml:"repost_log_file"`
+	ToggleDebug bool   `toml:"debug_enabled"`
 }
 
-type IncomingMessage struct {
-	MessageID   int
-	MessageTime time.Time
-	UserName    string
-	MessageText string
-}
-
-func loadBotConfig() BotConfigFromFile {
+func LoadBotConfiguration() BotConfigFromFile {
 	var config BotConfigFromFile
 	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
-	return BotConfigFromFile{BotToken: config.BotToken, LogFile: config.LogFile}
+	return BotConfigFromFile{BotToken: config.BotToken, LogFilePath: config.LogFilePath}
 }
 
 func main() {
-	botConf := loadBotConfig()
+	botConf := LoadBotConfiguration()
 	bot, err := tgbotapi.NewBotAPI(botConf.BotToken)
 	if err != nil {
 		log.Fatal(err)
 	}
-	bot.Debug = true
+	bot.Debug = botConf.ToggleDebug
+	db := InitChatLogDB(botConf.LogFilePath)
 	log.Printf("Auth'd on account %s", bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -47,19 +42,18 @@ func main() {
 			continue
 		}
 		im := &IncomingMessage{
-			MessageID:   update.Message.MessageID,
-			MessageTime: update.Message.Time(),
-			UserName:    update.Message.From.UserName,
-			MessageText: update.Message.Text,
+			MessageID:    update.Message.MessageID,
+			MessageTime:  update.Message.Time(),
+			UserName:     update.Message.From.UserName,
+			MessageText:  update.Message.Text,
+			SubmittedURL: "",
 		}
 
-		im.AddLogToDB(botConf.LogFile)
-
-		//log.Printf("Message text: %s", im.MessageText)
-		//log.Printf("Message received from: %s", im.UserName)
-
-		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		//msg.ReplyToMessageID = update.Message.MessageID
-		//bot.Send(msg)
+		rxRelaxed := xurls.Relaxed()
+		foundURL := rxRelaxed.FindString(update.Message.Text)
+		if foundURL != "" { // If the group message contains a URL, save it to the database
+			im.SubmittedURL = foundURL
+			im.StoreChatLog(db)
+		}
 	}
 }

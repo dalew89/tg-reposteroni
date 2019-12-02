@@ -3,22 +3,54 @@ package main
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	"time"
 )
 
-//AddLogToDB adds lines of the group chat to the db file specified in config.toml
-func (im *IncomingMessage) AddLogToDB(logFile string) {
-	database, _ := sql.Open("sqlite3", logFile)
-	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS chatLog (id INTEGER PRIMARY KEY, username TEXT, messagetext TEXT, message_time_sent TEXT)")
-	statement.Exec()
-	statement, _ = database.Prepare("INSERT INTO chatLog (username, messagetext, message_time_sent) VALUES (?, ?, ?)")
-	statement.Exec(im.UserName, im.MessageText, im.MessageTime)
-	//rows, _ := database.Query("SELECT id, username, messagetext, FROM chathistory")
-	//var id int
-	//var username string
-	//var messagetext string
-	//for rows.Next() {
-	//	rows.Scan(&id, &username, &messagetext)
-	//	fmt.Println(strconv.Itoa(id) + ": " + username + " " + messagetext + " ")
-	//
-	//}
+type IncomingMessage struct {
+	MessageID    int
+	MessageTime  time.Time
+	UserName     string
+	MessageText  string
+	SubmittedURL string
+}
+
+// InitChatLogDB initialises the DB to store the chat logs from the group chat.
+func InitChatLogDB(path string) *sql.DB {
+	database, err := sql.Open("sqlite3", path)
+	if err != nil {
+		panic(err)
+	}
+	if database == nil {
+		panic(err)
+	}
+	chatLogTable := `
+	CREATE TABLE IF NOT EXISTS chatLog(
+		message_id INTEGER,
+		message_timestamp TEXT,
+		username TEXT,
+		message_content TEXT,
+		submitted_url TEXT
+	);
+	`
+	database.Exec(chatLogTable)
+	return database
+}
+
+// StoreChatLog writes chat logs to the DB
+func (im *IncomingMessage) StoreChatLog(database *sql.DB) {
+	logEntry := `
+	INSERT INTO chatLog(
+		message_id, 
+		message_timestamp, 
+		username,
+		message_content,
+		submitted_url
+	) values(?, ?, ?, ?, ?)
+	`
+	stmt, err := database.Prepare(logEntry)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+	stmt.Exec(im.MessageID, im.MessageTime, im.UserName, im.MessageText, im.SubmittedURL)
 }
