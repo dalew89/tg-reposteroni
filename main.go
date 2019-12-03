@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/mvdan/xurls"
 	"log"
 )
 
@@ -13,12 +12,17 @@ type BotConfigFromFile struct {
 	ToggleDebug bool   `toml:"debug_enabled"`
 }
 
+// LoadBotConfiguration loads the bot options from config.toml
 func LoadBotConfiguration() BotConfigFromFile {
 	var config BotConfigFromFile
 	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
-	return BotConfigFromFile{BotToken: config.BotToken, LogFilePath: config.LogFilePath}
+	return BotConfigFromFile{
+		BotToken:    config.BotToken,
+		LogFilePath: config.LogFilePath,
+		ToggleDebug: config.ToggleDebug,
+	}
 }
 
 func main() {
@@ -27,33 +31,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	bot.Debug = botConf.ToggleDebug
-	db := InitChatLogDB(botConf.LogFilePath)
+	chatLogDB := InitChatDB(botConf.LogFilePath)
 	log.Printf("Auth'd on account %s", bot.Self.UserName)
+	bot.Debug = botConf.ToggleDebug
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	for update := range updates {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-		im := &IncomingMessage{
-			MessageID:    update.Message.MessageID,
-			MessageTime:  update.Message.Time(),
-			UserName:     update.Message.From.UserName,
-			MessageText:  update.Message.Text,
-			SubmittedURL: "",
-		}
-
-		rxRelaxed := xurls.Relaxed()
-		foundURL := rxRelaxed.FindString(update.Message.Text)
-		if foundURL != "" { // If the group message contains a URL, save it to the database
-			im.SubmittedURL = foundURL
-			im.StoreChatLog(db)
-		}
+		url := IdentifyMessage(update)
+		CheckForRepost(url, chatLogDB)
+		//AddLogToDB(update)
 	}
 }
