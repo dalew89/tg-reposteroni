@@ -5,6 +5,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mvdan/xurls"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -38,6 +40,8 @@ func FindURLInText(message string) string {
 
 // InitChatDB initialises the database to store the chat logs from the group chat.
 func InitChatDB(path string) *sql.DB {
+	dataPath := filepath.Join(".", "data")
+	os.MkdirAll(dataPath, os.ModePerm)
 	database, err := sql.Open("sqlite3", path)
 	if err != nil {
 		panic(err)
