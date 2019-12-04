@@ -1,5 +1,5 @@
 title = "Bot configuration"
 
-bot_token = "TOKEN_GOES_HERE"
+bot_token = "906048410:AAHIYeG1KJ4p9A_w8hpIlWARtOQWtiBuMno"
 repost_log_file = "data/chat_logs.db"
-debug_enabled = false
+debug_enabled = true

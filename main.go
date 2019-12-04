@@ -8,7 +8,7 @@ import (
 
 type BotConfigFromFile struct {
 	BotToken    string `toml:"bot_token"`
-	LogFilePath string `toml:"repost_log_file"`
+	LogDBPath   string `toml:"repost_log_file"`
 	ToggleDebug bool   `toml:"debug_enabled"`
 }
 
@@ -20,7 +20,7 @@ func LoadBotConfiguration() BotConfigFromFile {
 	}
 	return BotConfigFromFile{
 		BotToken:    config.BotToken,
-		LogFilePath: config.LogFilePath,
+		LogDBPath:   config.LogDBPath,
 		ToggleDebug: config.ToggleDebug,
 	}
 }
@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	chatLogDB := InitChatDB(botConf.LogFilePath)
+	chatLogDB := InitChatDB(botConf.LogDBPath)
 	log.Printf("Auth'd on account %s", bot.Self.UserName)
 	bot.Debug = botConf.ToggleDebug
 	u := tgbotapi.NewUpdate(0)
@@ -44,8 +44,24 @@ func main() {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-		url := IdentifyMessage(update)
-		CheckForRepost(url, chatLogDB)
-		//AddLogToDB(update)
+		im := IncomingMessage{
+			MessageID:      update.Message.MessageID,
+			MessageTime:    update.Message.Time(),
+			UserName:       update.Message.From.UserName,
+			MessageText:    update.Message.Text,
+			SubmittedURL:   "",
+			SubmittedImage: nil,
+		}
+		url := im.IdentifyMessage()
+		if im.IsRepost(url, chatLogDB) == true {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+				`╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ Copypastus Totalus!! I can't believe people actually take time out
+of their day to copy and paste links instead of contributing to chat.`)
+			msg.ReplyToMessageID = update.Message.MessageID
+			bot.Send(msg)
+		}
+		if url != "" {
+			im.AddLogToDB(chatLogDB)
+		}
 	}
 }
