@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"os"
@@ -16,9 +15,6 @@ type BotConfig struct {
 // LoadBotConfiguration loads the bot options from config.toml
 func LoadBotConfiguration() BotConfig {
 	var config BotConfig
-	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
-		log.Fatal(err)
-	}
 	return BotConfig{
 		BotToken:    os.Getenv("BOT_TOKEN"),
 		LogDBPath:   os.Getenv("DATABASE_PATH"),
