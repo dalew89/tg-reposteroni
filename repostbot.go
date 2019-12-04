@@ -97,7 +97,6 @@ func (im *IncomingMessage) IsRepost(potentialRepostedURL string, database *sql.D
 	}
 	switch {
 	case numberOfLinks > 0:
-		log.Printf("reeepost detected")
 		return true
 	default:
 		return false
