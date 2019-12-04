@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mvdan/xurls"
 	"log"
@@ -39,15 +40,27 @@ func FindURLInText(message string) string {
 }
 
 // InitChatDB initialises the database to store the chat logs from the group chat.
-func InitChatDB(path string) *sql.DB {
-	dataPath := filepath.Join(".", "data")
-	os.MkdirAll(dataPath, os.ModePerm)
-	database, err := sql.Open("sqlite3", path)
-	if err != nil {
-		panic(err)
-	}
-	if database == nil {
-		panic(err)
+func InitChatDB(IsLocal string, path string) *sql.DB {
+	var database *sql.DB
+	switch {
+	case IsLocal == "true":
+		dataPath := filepath.Join(".", "data")
+		os.MkdirAll(dataPath, os.ModePerm)
+		database, _ = sql.Open("sqlite3", path)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//if database == nil {
+		//	panic(err)
+		//}
+	case IsLocal == "false":
+		database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+		//if err != nil {
+		//	panic(err)
+		//}
+		//if database == nil {
+		//	panic(err)
+		//}
 	}
 	chatLogTable := `
 	create table if not exists chatLog(
@@ -58,7 +71,10 @@ func InitChatDB(path string) *sql.DB {
 		submitted_url TEXT
 	);
 	`
-	database.Exec(chatLogTable)
+	_, err := database.Exec(chatLogTable)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return database
 }
 

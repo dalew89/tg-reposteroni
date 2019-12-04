@@ -1,5 +1,0 @@
-title = "Bot configuration"
-
-bot_token = "BOT_TOKEN_GOES_HERE"
-repost_log_file = "data/chat_logs.db"
-debug_enabled = false

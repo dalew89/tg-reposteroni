@@ -4,24 +4,25 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
+	"os"
 )
 
-type BotConfigFromFile struct {
-	BotToken    string `toml:"bot_token"`
-	LogDBPath   string `toml:"repost_log_file"`
-	ToggleDebug bool   `toml:"debug_enabled"`
+type BotConfig struct {
+	BotToken    string
+	LogDBPath   string
+	LocalDB     string
 }
 
 // LoadBotConfiguration loads the bot options from config.toml
-func LoadBotConfiguration() BotConfigFromFile {
-	var config BotConfigFromFile
+func LoadBotConfiguration() BotConfig {
+	var config BotConfig
 	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
-	return BotConfigFromFile{
-		BotToken:    config.BotToken,
-		LogDBPath:   config.LogDBPath,
-		ToggleDebug: config.ToggleDebug,
+	return BotConfig{
+		BotToken:    os.Getenv("BOT_TOKEN"),
+		LogDBPath:   os.Getenv("DATABASE_PATH"),
+		LocalDB:     os.Getenv("IS_LOCAL"),
 	}
 }
 
@@ -31,9 +32,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	chatLogDB := InitChatDB(botConf.LogDBPath)
+	chatLogDB := InitChatDB(botConf.LocalDB, botConf.LogDBPath)
 	log.Printf("Auth'd on account %s", bot.Self.UserName)
-	bot.Debug = botConf.ToggleDebug
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
