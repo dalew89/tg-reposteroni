@@ -55,8 +55,9 @@ func main() {
 		url := im.IdentifyMessage()
 		if im.IsRepost(url, chatLogDB) == true {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
-				`╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ Copypastus Totalus!! I can't believe people actually take time out
-of their day to copy and paste links instead of contributing to chat.`)
+				`╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ 
+				Copypastus Totalus!! 
+				I can't believe people actually take time out of their day to copy and paste links instead of contributing to chat.`)
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		}
