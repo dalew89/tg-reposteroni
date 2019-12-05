@@ -1,1 +1,1 @@
-bot: cd ~/ && ls
+bot: go run main.go
