@@ -1,1 +1,1 @@
-bot: ./tg-reposteroni
+bot: ls
