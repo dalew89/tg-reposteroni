@@ -1,1 +1,1 @@
-web: tgRepost
+bot: app/bin/tgRepost
