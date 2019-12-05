@@ -1,1 +1,1 @@
-bot: tgRepost
+bot: ./tgRepost
