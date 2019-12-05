@@ -1,1 +1,1 @@
-bot: ls
+bot: cd bin && ls
