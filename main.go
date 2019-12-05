@@ -7,17 +7,17 @@ import (
 )
 
 type BotConfig struct {
-	BotToken    string
-	LogDBPath   string
-	LocalDB     string
+	BotToken  string
+	LogDBPath string
+	LocalDB   string
 }
 
 // LoadBotConfiguration loads the bot options from config.toml
 func LoadBotConfiguration() BotConfig {
 	return BotConfig{
-		BotToken:    os.Getenv("BOT_TOKEN"),
-		LogDBPath:   os.Getenv("DATABASE_PATH"),
-		LocalDB:     os.Getenv("IS_LOCAL"),
+		BotToken:  os.Getenv("BOT_TOKEN"),
+		LogDBPath: os.Getenv("DATABASE_PATH"),
+		LocalDB:   os.Getenv("IS_LOCAL"),
 	}
 }
 
@@ -52,8 +52,8 @@ func main() {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 				"╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ \n"+
 					"Repostus Copypastus Totalus!!\n"+
-					"I can't believe people actually take time out of their day to copy and paste links instead"+
-					" of contributing to chat.")
+					"I can't believe people actually take time out of their day to copy and paste links instead "+
+					"of contributing to chat.")
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		}
