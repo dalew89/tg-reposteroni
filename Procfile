@@ -1,1 +1,1 @@
-bot: bin/tgRepost/tgRepost
+bot: tgRepost
