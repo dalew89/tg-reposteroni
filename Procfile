@@ -1,1 +1,1 @@
-web: bin/tgRepost
+web: tgRepost
