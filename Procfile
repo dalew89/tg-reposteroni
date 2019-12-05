@@ -1,1 +1,1 @@
-bot: cd bin/ && ./tgRepost
+bot: bin/tg-reposteroni
