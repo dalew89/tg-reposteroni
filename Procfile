@@ -1,1 +1,1 @@
-bot: cd bin && ls
+bot: cd ~/bin/ && ls
