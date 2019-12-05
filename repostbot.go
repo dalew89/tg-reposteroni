@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mvdan/xurls"
 	"log"
+	"mvdan.cc/xurls"
 	"os"
 	"path/filepath"
 	"time"
@@ -34,8 +34,7 @@ func (im *IncomingMessage) IdentifyMessage() string {
 
 // FindURLInText will parse a URL from any text and return a string
 func FindURLInText(message string) string {
-	rxRelaxed := xurls.Relaxed()
-	foundURL := rxRelaxed.FindString(message)
+	foundURL := xurls.Relaxed().FindString(message)
 	return foundURL
 }
 

@@ -14,7 +14,6 @@ type BotConfig struct {
 
 // LoadBotConfiguration loads the bot options from config.toml
 func LoadBotConfiguration() BotConfig {
-	var config BotConfig
 	return BotConfig{
 		BotToken:    os.Getenv("BOT_TOKEN"),
 		LogDBPath:   os.Getenv("DATABASE_PATH"),
@@ -48,8 +47,8 @@ func main() {
 			SubmittedURL:   "",
 			SubmittedImage: nil,
 		}
-		url := im.IdentifyMessage()
-		if im.IsRepost(url, chatLogDB) == true {
+		parsedURL := im.IdentifyMessage()
+		if im.IsRepost(parsedURL, chatLogDB) == true {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 				"╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ \n"+
 					"Repostus Copypastus Totalus!!\n"+
@@ -58,7 +57,7 @@ func main() {
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		}
-		if url != "" {
+		if parsedURL != "" {
 			im.AddLogToDB(chatLogDB)
 		}
 	}
