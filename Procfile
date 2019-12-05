@@ -1,1 +1,1 @@
-bot: bin/./tgRepost
+bot: bin/./main
