@@ -1,1 +1,1 @@
-bot: app/bin/tgRepost
+bot: ~/bin/tgRepost
