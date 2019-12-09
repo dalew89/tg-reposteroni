@@ -52,8 +52,8 @@ func main() {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 				"╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ \n"+
 					"Repostus Copypastus Totalus!!\n"+
-					"I can't believe people actually take time out of their day to copy and paste links instead "+
-					"of contributing to chat.")
+					"I can't believe people actually take time out of their day to copy and paste links" +
+					"instead of contributing to chat.")
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		}
