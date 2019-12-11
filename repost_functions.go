@@ -43,24 +43,35 @@ func FindURLInText(message string) string {
 func InitChatDB(IsLocal string, path string) *sql.DB {
 	var database *sql.DB
 	switch {
-		case IsLocal == "true":
-			dataPath := filepath.Join(".", "data")
-			os.MkdirAll(dataPath, os.ModePerm)
-			database, _ = sql.Open("sqlite3", path)
-		case IsLocal == "false":
-			database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	case IsLocal == "true":
+		dataPath := filepath.Join(".", "data")
+		os.MkdirAll(dataPath, os.ModePerm)
+		database, _ = sql.Open("sqlite3", path)
+	case IsLocal == "false":
+		database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	}
 	chatLogTable :=
 		`create table if not exists chatLog(
 		message_id integer,
-		message_timestamp TEXT,
-		username TEXT,
-		message_content TEXT,
-		submitted_url TEXT
+		message_timestamp text,
+		username text,
+		message_content text,
+		submitted_url text
 	);`
+
+	repostCountTable :=
+		`create table if not exists repostLog(
+		username text,
+		repost_count integer	
+	);`
+
 	_, err := database.Exec(chatLogTable)
 	if err != nil {
 		log.Fatal(err)
+	}
+	_, err2 := database.Exec(repostCountTable)
+	if err2 != nil {
+		log.Fatal(err2)
 	}
 	return database
 }
@@ -98,10 +109,10 @@ func (im *IncomingMessage) IsRepost(potentialRepostedURL string, database *sql.D
 		numberOfLinks += 1
 	}
 	switch {
-		case numberOfLinks > 0:
-			return true
-		default:
-			return false
+	case numberOfLinks > 0:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -110,7 +121,7 @@ func (im *IncomingMessage) FlagRepost(bot tgbotapi.BotAPI, update tgbotapi.Updat
 	repostWarning := tgbotapi.NewMessage(update.Message.Chat.ID,
 		"╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ \n"+
 			"Repostus Copypastus Totalus!!\n"+
-			"I can't believe people actually take time out of their day to copy and paste links " +
+			"I can't believe people actually take time out of their day to copy and paste links "+
 			"instead of contributing to chat.")
 	repostWarning.ReplyToMessageID = update.Message.MessageID
 	bot.Send(repostWarning)
