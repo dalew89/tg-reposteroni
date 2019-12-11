@@ -18,4 +18,3 @@ func TestIncomingMessage_IdentifyMessage(t *testing.T) {
 		t.Errorf("Expected an empty string, got %s", value)
 	}
 }
-

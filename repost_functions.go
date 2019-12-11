@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
@@ -42,34 +43,21 @@ func FindURLInText(message string) string {
 func InitChatDB(IsLocal string, path string) *sql.DB {
 	var database *sql.DB
 	switch {
-	case IsLocal == "true":
-		dataPath := filepath.Join(".", "data")
-		os.MkdirAll(dataPath, os.ModePerm)
-		database, _ = sql.Open("sqlite3", path)
-		//if err != nil {
-		//	panic(err)
-		//}
-		//if database == nil {
-		//	panic(err)
-		//}
-	case IsLocal == "false":
-		database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
-		//if err != nil {
-		//	panic(err)
-		//}
-		//if database == nil {
-		//	panic(err)
-		//}
+		case IsLocal == "true":
+			dataPath := filepath.Join(".", "data")
+			os.MkdirAll(dataPath, os.ModePerm)
+			database, _ = sql.Open("sqlite3", path)
+		case IsLocal == "false":
+			database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	}
-	chatLogTable := `
-	create table if not exists chatLog(
+	chatLogTable :=
+		`create table if not exists chatLog(
 		message_id integer,
 		message_timestamp TEXT,
 		username TEXT,
 		message_content TEXT,
 		submitted_url TEXT
-	);
-	`
+	);`
 	_, err := database.Exec(chatLogTable)
 	if err != nil {
 		log.Fatal(err)
@@ -86,8 +74,7 @@ func (im *IncomingMessage) AddLogToDB(database *sql.DB) {
 		username,
 		message_content,
 		submitted_url
-	) values(?, ?, ?, ?, ?)
-	`
+	) values(?, ?, ?, ?, ?)`
 	stmt, err := database.Prepare(logEntry)
 	if err != nil {
 		panic(err)
@@ -111,9 +98,20 @@ func (im *IncomingMessage) IsRepost(potentialRepostedURL string, database *sql.D
 		numberOfLinks += 1
 	}
 	switch {
-	case numberOfLinks > 0:
-		return true
-	default:
-		return false
+		case numberOfLinks > 0:
+			return true
+		default:
+			return false
 	}
+}
+
+// FlagRepost replies to the reposted link
+func (im *IncomingMessage) FlagRepost(bot tgbotapi.BotAPI, update tgbotapi.Update) {
+	repostWarning := tgbotapi.NewMessage(update.Message.Chat.ID,
+		"╰( ͡° ͜ʖ ͡° )つ──☆*:・ﾟ \n"+
+			"Repostus Copypastus Totalus!!\n"+
+			"I can't believe people actually take time out of their day to copy and paste links " +
+			"instead of contributing to chat.")
+	repostWarning.ReplyToMessageID = update.Message.MessageID
+	bot.Send(repostWarning)
 }
