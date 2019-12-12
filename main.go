@@ -42,9 +42,10 @@ func main() {
 			continue
 		}
 
-		im := IncomingMessage {
+		im := IncomingMessage{
 			MessageID:      update.Message.MessageID,
 			MessageTime:    update.Message.Time(),
+			FirstName:      update.Message.From.FirstName,
 			UserName:       update.Message.From.UserName,
 			MessageText:    update.Message.Text,
 			SubmittedURL:   "",
@@ -54,6 +55,7 @@ func main() {
 		parsedURL := im.IdentifyMessage()
 		if im.IsRepost(parsedURL, chatLogDB) == true {
 			im.FlagRepost(*bot, update)
+			im.AddReposterToDB(chatLogDB)
 		}
 
 		// Add log to DB

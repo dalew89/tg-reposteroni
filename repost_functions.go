@@ -15,6 +15,7 @@ import (
 type IncomingMessage struct {
 	MessageID      int
 	MessageTime    time.Time
+	FirstName      string
 	UserName       string
 	MessageText    string
 	SubmittedURL   string
@@ -61,7 +62,8 @@ func InitChatDB(IsLocal string, path string) *sql.DB {
 
 	repostCountTable :=
 		`create table if not exists repostLog(
-		username text,
+		first_name text,
+		username text constraint user_constraint primary key,
 		repost_count integer	
 	);`
 
@@ -125,4 +127,22 @@ func (im *IncomingMessage) FlagRepost(bot tgbotapi.BotAPI, update tgbotapi.Updat
 			"instead of contributing to chat.")
 	repostWarning.ReplyToMessageID = update.Message.MessageID
 	bot.Send(repostWarning)
+}
+
+// AddReposterToDB adds the offending reposter to the DB with the number of reposts
+func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
+	repostEntry := `
+	insert into repostLog(
+		first_name,
+		username,
+		repost_count
+	) values(?, ?, ?)
+	update repostLog repost_count = repost_count +1 where username =;
+	`
+	stmt, err := database.Prepare(repostEntry)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+	stmt.Exec(im.FirstName, im.UserName)
 }
