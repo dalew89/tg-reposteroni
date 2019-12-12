@@ -47,7 +47,7 @@ func InitChatDB(IsLocal string, path string) *sql.DB {
 	case IsLocal == "true":
 		dataPath := filepath.Join(".", "data")
 		os.MkdirAll(dataPath, os.ModePerm)
-		database, _ = sql.Open("sqlite3", path)
+		database, _ = sql.Open("sqlite3", filepath.Join(dataPath, path))
 	case IsLocal == "false":
 		database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	}
@@ -63,7 +63,7 @@ func InitChatDB(IsLocal string, path string) *sql.DB {
 	repostCountTable :=
 		`create table if not exists repostLog(
 		first_name text,
-		username text constraint user_constraint primary key,
+		username text primary key,
 		repost_count integer	
 	);`
 
@@ -131,18 +131,16 @@ func (im *IncomingMessage) FlagRepost(bot tgbotapi.BotAPI, update tgbotapi.Updat
 
 // AddReposterToDB adds the offending reposter to the DB with the number of reposts
 func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
+	var repost_count int32
 	repostEntry := `
-	insert into repostLog(
+	insert or ignore into repostLog(
 		first_name,
 		username,
-		repost_count
-	) values(?, ?, ?)
-	update repostLog repost_count = repost_count +1 where username =;
-	`
-	stmt, err := database.Prepare(repostEntry)
+		repost_count) values(?, ?, ?)`
+	stmt, err := database.Prepare(`update repostLog set repost_count = repost_count +1 where username = ?`)
 	if err != nil {
 		panic(err)
 	}
 	defer stmt.Close()
-	stmt.Exec(im.FirstName, im.UserName)
+	stmt.Exec(repostEntry, im.FirstName, im.UserName, repost_count)
 }
