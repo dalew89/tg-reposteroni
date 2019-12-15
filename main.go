@@ -17,7 +17,6 @@ func LoadBotConfiguration() BotConfig {
 	return BotConfig{
 		BotToken:  os.Getenv("BOT_TOKEN"),
 		LogDBPath: os.Getenv("DATABASE_PATH"),
-		LocalDB:   os.Getenv("IS_LOCAL"),
 	}
 }
 
@@ -27,7 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	chatLogDB := InitChatDB(botConfValue.LocalDB, botConfValue.LogDBPath)
+	chatLogDB := InitChatDB(botConfValue.LogDBPath)
 	log.Printf("Bot authorised on account %s", bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -46,7 +45,7 @@ func main() {
 			MessageID:      update.Message.MessageID,
 			MessageTime:    update.Message.Time(),
 			FirstName:      update.Message.From.FirstName,
-			LastName:		update.Message.From.LastName,
+			LastName:       update.Message.From.LastName,
 			UserName:       update.Message.From.UserName,
 			MessageText:    update.Message.Text,
 			SubmittedURL:   "",
@@ -62,6 +61,10 @@ func main() {
 		// Add log to DB
 		if parsedURL != "" {
 			incomingMessage.AddLogToDB(chatLogDB)
+		}
+
+		if update.Message.Text == "!repoststats" {
+			RetrieveRepostStats(chatLogDB)
 		}
 	}
 }

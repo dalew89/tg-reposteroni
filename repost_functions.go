@@ -16,6 +16,7 @@ type IncomingMessage struct {
 	MessageID      int
 	MessageTime    time.Time
 	FirstName      string
+	LastName       string
 	UserName       string
 	MessageText    string
 	SubmittedURL   string
@@ -41,31 +42,24 @@ func FindURLInText(message string) string {
 }
 
 // InitChatDB initialises the database to store the chat logs from the group chat.
-func InitChatDB(IsLocal string, path string) *sql.DB {
-	var database *sql.DB
-	switch {
-	case IsLocal == "true":
-		dataPath := filepath.Join(".", "data")
-		os.MkdirAll(dataPath, os.ModePerm)
-		database, _ = sql.Open("sqlite3", filepath.Join(dataPath, path))
-	case IsLocal == "false":
-		database, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	}
-	chatLogTable :=
-		`create table if not exists chatLog(
+func InitChatDB(databasePath string) *sql.DB {
+	dataPath := filepath.Join(".", "data")
+	os.MkdirAll(dataPath, os.ModePerm)
+	database, _ := sql.Open("sqlite3", filepath.Join(dataPath, databasePath))
+
+	chatLogTable := `create table if not exists chatLog (
 		message_id integer,
 		message_timestamp text,
-		username text,
-		message_content text,
-		submitted_url text
-	);`
-
-	repostCountTable :=
-		`create table if not exists repostLog(
 		first_name text,
+		last_name text,
+		username text,
+		submitted_url text);`
+
+	repostCountTable := `create table if not exists repostLog (
+		first_name text,
+		last_name text,
 		username text primary key,
-		repost_count integer	
-	);`
+		repost_count integer);`
 
 	_, err := database.Exec(chatLogTable)
 	if err != nil {
@@ -81,19 +75,58 @@ func InitChatDB(IsLocal string, path string) *sql.DB {
 // AddLogToDB writes a single chat logs to the the DB.
 func (im *IncomingMessage) AddLogToDB(database *sql.DB) {
 	logEntry := `
-	insert into chatLog(
+	insert into chatLog (
 		message_id, 
-		message_timestamp, 
+		message_timestamp,
+		first_name,
+		last_name,  
 		username,
-		message_content,
-		submitted_url
-	) values(?, ?, ?, ?, ?)`
-	stmt, err := database.Prepare(logEntry)
+		submitted_url) 
+		values(?, ?, ?, ?, ?, ?)`
+	statement, err := database.Prepare(logEntry)
 	if err != nil {
 		panic(err)
 	}
-	defer stmt.Close()
-	stmt.Exec(im.MessageID, im.MessageTime, im.UserName, im.MessageText, im.SubmittedURL)
+	defer statement.Close()
+	statement.Exec(im.MessageID,
+		im.MessageTime,
+		im.FirstName,
+		im.LastName,
+		im.UserName,
+		im.SubmittedURL)
+}
+
+// AddReposterToDB adds the offending reposter to the DB with the number of reposts
+func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
+	repostLogEntry := `insert into repostLog (
+		first_name,
+		last_name,
+		username,
+		repost_count) values(?, ?, ?, 0)`
+
+	addRow, err := database.Prepare(repostLogEntry)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer addRow.Close()
+	addRow.Exec(im.FirstName, im.LastName, im.UserName)
+
+	updateCount := `update repostLog 
+		set repost_count = repost_count+1 
+		where username = ? 
+		or first_name = ? and last_name = ?`
+
+	incrementRow, err2 := database.Prepare(updateCount)
+	if err2 != nil {
+		log.Fatal(err)
+	}
+	defer incrementRow.Close()
+	incrementRow.Exec(im.UserName, im.FirstName, im.LastName)
+}
+
+//RetrieveRepostStats queries the database for a list of all reposters in the chat
+func RetrieveRepostStats(database *sql.DB) {
+	// TODO
 }
 
 // IsRepost scans the db for potential URL reposts. If it is a repost, return true
@@ -127,18 +160,4 @@ func (im *IncomingMessage) FlagRepost(bot tgbotapi.BotAPI, update tgbotapi.Updat
 			"instead of contributing to chat.")
 	repostWarning.ReplyToMessageID = update.Message.MessageID
 	bot.Send(repostWarning)
-}
-
-// AddReposterToDB adds the offending reposter to the DB with the number of reposts
-func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
-	stmt, err := database.Prepare(`insert or update into repostLog(
-		repost_count,
-		first_name,
-		username,
-		repost_count) values(?, ?, ?)`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt.Exec()
-	//database.Exec(im.FirstName, im.UserName, repostcount)
 }
