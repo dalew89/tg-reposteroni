@@ -131,16 +131,14 @@ func (im *IncomingMessage) FlagRepost(bot tgbotapi.BotAPI, update tgbotapi.Updat
 
 // AddReposterToDB adds the offending reposter to the DB with the number of reposts
 func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
-	var repost_count int32
-	repostEntry := `
-	insert or ignore into repostLog(
+	stmt, err := database.Prepare(`insert or update into repostLog(
+		repost_count,
 		first_name,
 		username,
-		repost_count) values(?, ?, ?)`
-	stmt, err := database.Prepare(`update repostLog set repost_count = repost_count +1 where username = ?`)
+		repost_count) values(?, ?, ?)`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer stmt.Close()
-	stmt.Exec(repostEntry, im.FirstName, im.UserName, repost_count)
+	stmt.Exec()
+	//database.Exec(im.FirstName, im.UserName, repostcount)
 }

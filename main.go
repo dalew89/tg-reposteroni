@@ -42,25 +42,26 @@ func main() {
 			continue
 		}
 
-		im := IncomingMessage{
+		incomingMessage := IncomingMessage{
 			MessageID:      update.Message.MessageID,
 			MessageTime:    update.Message.Time(),
 			FirstName:      update.Message.From.FirstName,
+			LastName:		update.Message.From.LastName,
 			UserName:       update.Message.From.UserName,
 			MessageText:    update.Message.Text,
 			SubmittedURL:   "",
 			SubmittedImage: nil,
 		}
 
-		parsedURL := im.IdentifyMessage()
-		if im.IsRepost(parsedURL, chatLogDB) == true {
-			im.FlagRepost(*bot, update)
-			im.AddReposterToDB(chatLogDB)
+		parsedURL := incomingMessage.IdentifyMessage()
+		if incomingMessage.IsRepost(parsedURL, chatLogDB) == true {
+			incomingMessage.FlagRepost(*bot, update)
+			incomingMessage.AddReposterToDB(chatLogDB)
 		}
 
 		// Add log to DB
 		if parsedURL != "" {
-			im.AddLogToDB(chatLogDB)
+			incomingMessage.AddLogToDB(chatLogDB)
 		}
 	}
 }
