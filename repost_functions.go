@@ -23,6 +23,13 @@ type IncomingMessage struct {
 	SubmittedImage []interface{}
 }
 
+type ReposterDetails struct {
+	firstName   string
+	lastName    string
+	userName    string
+	repostCount int
+}
+
 // IdentifyMessage identifies and returns what a message contains
 func (im *IncomingMessage) IdentifyMessage() string {
 	potentialURL := FindURLInText(im.MessageText)
@@ -126,7 +133,46 @@ func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
 
 //RetrieveRepostStats queries the database for a list of all reposters in the chat
 func RetrieveRepostStats(database *sql.DB) {
-	// TODO
+	var (
+		firstName   string
+		lastName    string
+		userName    string
+		repostCount int
+	)
+	repostQuery := `select first_name, 
+		last_name, 
+		username, 
+		repost_count 
+		from repostLog 
+		order by repost_count desc`
+
+	rows, err := database.Query(repostQuery)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var reposterList []ReposterDetails
+	for rows.Next() {
+		err := rows.Scan(&firstName, &lastName, &userName, &repostCount)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rd := ReposterDetails{
+			firstName:   firstName,
+			lastName:    lastName,
+			userName:    userName,
+			repostCount: repostCount,
+		}
+		reposterList = append(reposterList, rd)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//log.Println("the list of reposters are: ", reposterList)
+	for _, reposter := range reposterList {
+		log.Printf("%s with %d repost(s)", reposter.firstName, reposter.repostCount)
+	}
 }
 
 // IsRepost scans the db for potential URL reposts. If it is a repost, return true
