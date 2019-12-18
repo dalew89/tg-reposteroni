@@ -2,7 +2,6 @@ FROM golang:onbuild
 RUN mkdir /app
 ADD . /app/
 WORKDIR /app
-VOLUME . /app/data
+VOLUME . /app/
 RUN go build -o reposteroni .
-
 CMD ["/app/reposteroni"]
