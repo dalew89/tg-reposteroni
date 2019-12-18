@@ -40,6 +40,12 @@ func main() {
 		if update.Message == nil {
 			continue
 		}
+		if update.Message.IsCommand() {
+			switch update.Message.Command() {
+			case "repoststats":
+				RetrieveRepostStats(chatLogDB, *bot, update)
+			}
+		}
 
 		incomingMessage := IncomingMessage{
 			MessageID:      update.Message.MessageID,
@@ -61,10 +67,6 @@ func main() {
 		// Add log to DB
 		if parsedURL != "" {
 			incomingMessage.AddLogToDB(chatLogDB)
-		}
-
-		if update.Message.Text == "!repoststats" {
-			RetrieveRepostStats(chatLogDB)
 		}
 	}
 }

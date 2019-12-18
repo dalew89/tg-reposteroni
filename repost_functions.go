@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
@@ -132,12 +133,14 @@ func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
 }
 
 //RetrieveRepostStats queries the database for a list of all reposters in the chat
-func RetrieveRepostStats(database *sql.DB) {
+func RetrieveRepostStats(database *sql.DB, bot tgbotapi.BotAPI, update tgbotapi.Update) {
 	var (
-		firstName   string
-		lastName    string
-		userName    string
-		repostCount int
+		firstName    string
+		lastName     string
+		userName     string
+		repostCount  int
+		reposters    []ReposterDetails
+		reposterList string
 	)
 	repostQuery := `select first_name, 
 		last_name, 
@@ -151,27 +154,39 @@ func RetrieveRepostStats(database *sql.DB) {
 		log.Fatal(err)
 	}
 	defer rows.Close()
-	var reposterList []ReposterDetails
 	for rows.Next() {
 		err := rows.Scan(&firstName, &lastName, &userName, &repostCount)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		rd := ReposterDetails{
 			firstName:   firstName,
 			lastName:    lastName,
 			userName:    userName,
 			repostCount: repostCount,
 		}
-		reposterList = append(reposterList, rd)
+		reposters = append(reposters, rd)
 	}
 	err = rows.Err()
 	if err != nil {
 		log.Fatal(err)
 	}
-	//log.Println("the list of reposters are: ", reposterList)
-	for _, reposter := range reposterList {
-		log.Printf("%s with %d repost(s)", reposter.firstName, reposter.repostCount)
+
+	for _, reposter := range reposters {
+		reposterList += fmt.Sprintf("%s (%s) has %d repost(s).\n",
+			reposter.firstName, reposter.userName, reposter.repostCount)
+	}
+	switch reposters {
+	case nil:
+		noRepostSummary := tgbotapi.NewMessage(update.Message.Chat.ID,
+			"There haven't been any reposters...yet")
+		bot.Send(noRepostSummary)
+	default:
+		repostSummaryContent := fmt.Sprintf("Repost Rankings:\n"+
+			"%s", reposterList)
+		repostSummaryMsg := tgbotapi.NewMessage(update.Message.Chat.ID, repostSummaryContent)
+		bot.Send(repostSummaryMsg)
 	}
 }
 
