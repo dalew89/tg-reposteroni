@@ -18,6 +18,7 @@ type IncomingMessage struct {
 	LastName       string
 	UserName       string
 	MessageText    string
+	ChatID         int64
 	SubmittedURL   string
 	SubmittedImage []interface{}
 }
@@ -63,6 +64,7 @@ func InitChatDB(databaseName string) *sql.DB {
 		first_name text,
 		last_name text,
 		username text primary key,
+		chat_id integer,
 		repost_count integer);`
 
 	_, err := database.Exec(chatLogTable)
@@ -106,14 +108,15 @@ func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
 		first_name,
 		last_name,
 		username,
-		repost_count) values(?, ?, ?, 0)`
+		chat_id,
+		repost_count) values(?, ?, ?, ?, 0)`
 
 	addRow, err := database.Prepare(repostLogEntry)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer addRow.Close()
-	addRow.Exec(im.FirstName, im.LastName, im.UserName)
+	addRow.Exec(im.FirstName, im.LastName, im.UserName, im.ChatID)
 
 	updateCount := `update repostLog 
 		set repost_count = repost_count+1 
@@ -129,7 +132,7 @@ func (im *IncomingMessage) AddReposterToDB(database *sql.DB) {
 }
 
 //RetrieveRepostStats queries the database for a list of all reposters in the chat
-func RetrieveRepostStats(database *sql.DB, bot tgbotapi.BotAPI, update tgbotapi.Update) {
+func (im *IncomingMessage) RetrieveRepostStats(database *sql.DB, bot tgbotapi.BotAPI, update tgbotapi.Update) {
 	var (
 		firstName    string
 		lastName     string
@@ -142,10 +145,10 @@ func RetrieveRepostStats(database *sql.DB, bot tgbotapi.BotAPI, update tgbotapi.
 		last_name, 
 		username, 
 		repost_count 
-		from repostLog 
+		from repostLog where chat_id = ?
 		order by repost_count desc`
 
-	rows, err := database.Query(repostQuery)
+	rows, err := database.Query(repostQuery, im.ChatID)
 	if err != nil {
 		log.Fatal(err)
 	}

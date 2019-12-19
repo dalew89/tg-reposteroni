@@ -26,6 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	bot.Debug = true
 	chatLogDB := InitChatDB(botConfValue.LogDBPath)
 	log.Printf("Bot authorised on account %s", bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
@@ -40,12 +41,6 @@ func main() {
 		if update.Message == nil {
 			continue
 		}
-		if update.Message.IsCommand() {
-			switch update.Message.Command() {
-			case "repoststats":
-				RetrieveRepostStats(chatLogDB, *bot, update)
-			}
-		}
 
 		incomingMessage := IncomingMessage{
 			MessageID:      update.Message.MessageID,
@@ -54,6 +49,7 @@ func main() {
 			LastName:       update.Message.From.LastName,
 			UserName:       update.Message.From.UserName,
 			MessageText:    update.Message.Text,
+			ChatID:			update.Message.Chat.ID,
 			SubmittedURL:   "",
 			SubmittedImage: nil,
 		}
@@ -67,6 +63,12 @@ func main() {
 		// Add log to DB
 		if parsedURL != "" {
 			incomingMessage.AddLogToDB(chatLogDB)
+		}
+		if update.Message.IsCommand() {
+			switch update.Message.Command() {
+			case "repoststats":
+				incomingMessage.RetrieveRepostStats(chatLogDB, *bot, update)
+			}
 		}
 	}
 }
